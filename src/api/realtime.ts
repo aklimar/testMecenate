@@ -1,7 +1,6 @@
 import type { Comment } from '../types/comment';
 import type { PostAuthor } from '../types/post';
 import { API_BASE } from './constants';
-import { getSessionBearerToken } from './sessionToken';
 
 function parsePostAuthor(raw: unknown): PostAuthor | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -50,8 +49,8 @@ export function parseCommentPayload(raw: unknown): Comment | null {
   };
 }
 
-export function getRealtimeWsUrl(): string | null {
-  const token = getSessionBearerToken()?.trim();
+export function buildRealtimeWsUrl(sessionToken: string | undefined): string | null {
+  const token = sessionToken?.trim();
   if (!token) return null;
   const wsOrigin = API_BASE.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
   return `${wsOrigin}/ws?token=${encodeURIComponent(token)}`;

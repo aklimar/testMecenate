@@ -1,1 +1,160 @@
-Запуск - npx expo start
+- Expo 54
+- React 19
+- React Native 0.81
+- TypeScript strict mode
+- React Navigation native stack
+- TanStack React Query
+- MobX / mobx-react-lite
+- Axios
+- Expo Image, Blur, Haptics, Crypto, StatusBar
+- React Native Reanimated
+- React Native SVG
+- React Native Safe Area Context
+- Segmented Control
+
+
+- Экран приветствия с генерацией UUID-токена пользователя.
+- Лента публикаций с пагинацией и pull-to-refresh.
+- Фильтры ленты: все, бесплатные, платные.
+- Бесплатные публикации открываются на детальный экран.
+- Платные публикации отображаются с blur-оверлеем и призывом к донату.
+- Оптимистичные лайки с откатом при ошибке.
+- Детальная страница публикации с полным текстом и комментариями.
+- Добавление комментариев с обновлением кеша.
+- Realtime-синхронизация лайков и новых комментариев через WebSocket.
+- Skeleton-состояния загрузки и экраны ошибок.
+- Единые дизайн-токены для цветов, отступов, радиусов, размеров и типографики.
+
+## API
+
+Базовый URL API задан в `src/api/constants.ts`:
+
+```ts
+export const API_BASE = 'https://k8s.mectest.ru/test-app';
+```
+
+Основные запросы:
+
+- `GET /posts` - получение ленты публикаций.
+- `GET /posts/:postId` - получение одной публикации.
+- `GET /posts/:postId/comments` - получение комментариев.
+- `POST /posts/:postId/comments` - добавление комментария.
+- `POST /posts/:postId/like` - переключение лайка.
+- `WS /ws?token=...` - realtime-события.
+
+Токен передается в `Authorization: Bearer <token>` через axios interceptor.
+
+## Установка
+
+```bash
+npm install
+```
+
+## Запуск
+
+```bash
+npm start
+```
+
+То же самое напрямую через Expo:
+
+```bash
+npx expo start
+```
+
+Запуск под конкретную платформу:
+
+```bash
+npm run ios
+npm run android
+npm run web
+```
+
+## Структура проекта
+
+```text
+.
+├── App.tsx
+├── index.ts
+├── app.json
+├── package.json
+├── src
+│   ├── api
+│   │   ├── client.ts
+│   │   ├── constants.ts
+│   │   ├── posts.ts
+│   │   └── realtime.ts
+│   ├── components
+│   │   ├── PostCard.tsx
+│   │   ├── PostDetailSkeletons.tsx
+│   │   ├── PostLikePill.tsx
+│   │   └── icons
+│   ├── navigation
+│   │   ├── AppNavigator.tsx
+│   │   └── types.ts
+│   ├── providers
+│   │   └── AppProviders.tsx
+│   ├── query
+│   │   ├── commentCache.ts
+│   │   └── patchFeedPost.ts
+│   ├── screens
+│   │   ├── FeedScreen.tsx
+│   │   ├── PostDetailScreen.tsx
+│   │   └── WelcomeScreen.tsx
+│   ├── stores
+│   │   ├── feedStore.ts
+│   │   ├── realtimeStore.ts
+│   │   ├── rootStore.ts
+│   │   └── sessionStore.ts
+│   ├── theme
+│   │   ├── tokens.json
+│   │   └── tokens.ts
+│   └── types
+│       ├── comment.ts
+│       └── post.ts
+└── tsconfig.json
+```
+
+## Основные модули
+
+- `App.tsx` - корневой компонент, подключает Safe Area, провайдеры, навигацию и StatusBar.
+- `src/navigation/AppNavigator.tsx` - стек навигации: Welcome, Feed, PostDetail.
+- `src/providers/AppProviders.tsx` - React Query Client и realtime-синхронизация.
+- `src/api/client.ts` - axios-клиент с Authorization interceptor.
+- `src/api/posts.ts` - функции работы с публикациями, комментариями и лайками.
+- `src/api/realtime.ts` - сборка WebSocket URL, парсинг событий и защита от конфликта локального лайка с WS-обновлением.
+- `src/stores/*` - MobX-хранилища для сессии, фильтра ленты и realtime-соединения.
+- `src/query/*` - точечное обновление кеша React Query.
+- `src/theme/*` - дизайн-токены и типизированные helpers.
+
+MobX:
+
+- `SessionStore` хранит текущий токен.
+- `FeedStore` хранит выбранный фильтр ленты.
+- `RealtimeStore` управляет WebSocket-соединением, статусом и реконнектом.
+
+React Query используется для серверного состояния:
+
+- бесконечная лента публикаций;
+- детальная публикация;
+- бесконечный список комментариев;
+- оптимистичное обновление лайков;
+- локальное добавление новых комментариев в кеш.
+
+## Realtime
+
+После появления токена приложение открывает WebSocket-соединение.
+Поддерживаемые события:
+
+- `ping`;
+- `like_updated`;
+- `comment_added`.
+
+События обновляют кеш React Query без полной перезагрузки экранов.
+
+## TypeScript
+Типы публикаций и комментариев находятся в `src/types`.
+
+## Примечания
+- Основной сценарий входа тестовый: токен создается через `Crypto.randomUUID()`.
+- Платный контент визуально скрыт, кнопка доната пока не выполняет бизнес-действие.

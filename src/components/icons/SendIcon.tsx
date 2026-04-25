@@ -1,11 +1,12 @@
 import Svg, { Path } from 'react-native-svg';
+import { tokens } from '../../theme/tokens';
 
 type Props = {
   size?: number;
   color?: string;
 };
 
-export function SendIcon({ size = 24, color = '#6115CD' }: Props) {
+export function SendIcon({ size = 24, color = tokens.color.primary }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 30 30" fill="none">
       <Path

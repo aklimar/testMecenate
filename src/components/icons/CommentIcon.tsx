@@ -1,11 +1,12 @@
 import Svg, { Path } from 'react-native-svg';
+import { tokens } from '../../theme/tokens';
 
 type Props = {
   size?: number;
   color?: string;
 };
 
-export function CommentIcon({ size = 24, color = '#5A636A' }: Props) {
+export function CommentIcon({ size = 24, color = tokens.color.pillForeground }: Props) {
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
