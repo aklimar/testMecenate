@@ -1,33 +1,31 @@
 import { useEffect, useRef } from 'react';
-import { Platform, Pressable, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Platform, Pressable, View } from 'react-native';
 import Animated, {
   interpolateColor,
-  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { LikeIcon } from './icons/LikeIcon';
+import { tokens } from '../theme/tokens';
 
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+const t = tokens;
 
-const LIKED_BG = '#FF2B75';
-const LIKED_FG = '#FFFFFF';
-
-const GAP = 4;
 const ROW = {
   flexDirection: 'row' as const,
   alignItems: 'center' as const,
-  gap: GAP,
-  borderRadius: 9999,
-  paddingHorizontal: 12,
-  paddingVertical: 8,
+  gap: t.space.xs,
+  borderRadius: t.radius.full,
+  paddingHorizontal: t.space.md,
+  paddingVertical: t.space.sm,
 };
 
 const COUNT_FONT = {
-  fontSize: 14,
-  fontWeight: '500' as const,
+  ...t.typography.captionMedium,
+  height: t.lineHeight.sm,
   padding: 0,
+  paddingVertical: 0,
   margin: 0,
   borderWidth: 0,
   minWidth: 10,
@@ -44,16 +42,8 @@ type Props = {
 };
 
 export function PostLikePill({ likesCount, isLiked, disabled, onPress, pillBg, pillFg }: Props) {
-  const countSv = useSharedValue(likesCount);
   const likedSv = useSharedValue(isLiked ? 1 : 0);
-  const prevLikesCountRef = useRef(likesCount);
   const prevLikedRef = useRef(isLiked);
-
-  useEffect(() => {
-    if (prevLikesCountRef.current === likesCount) return;
-    prevLikesCountRef.current = likesCount;
-    countSv.value = withTiming(likesCount, { duration: 320 });
-  }, [likesCount, countSv]);
 
   useEffect(() => {
     if (prevLikedRef.current === isLiked) return;
@@ -62,11 +52,11 @@ export function PostLikePill({ likesCount, isLiked, disabled, onPress, pillBg, p
   }, [isLiked, likedSv]);
 
   const pillAnimatedStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(likedSv.value, [0, 1], [pillBg, LIKED_BG]),
+    backgroundColor: interpolateColor(likedSv.value, [0, 1], [pillBg, t.color.like]),
   }));
 
   const countColorStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(likedSv.value, [0, 1], [pillFg, LIKED_FG]),
+    color: interpolateColor(likedSv.value, [0, 1], [pillFg, t.color.primaryForeground]),
   }));
 
   const outlineIconStyle = useAnimatedStyle(() => ({
@@ -77,21 +67,16 @@ export function PostLikePill({ likesCount, isLiked, disabled, onPress, pillBg, p
     opacity: likedSv.value,
   }));
 
-  const animatedCountProps = useAnimatedProps(() => {
-    const n = Math.round(countSv.value);
-    return {
-      text: String(n),
-      defaultValue: String(n),
-    };
-  });
-
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={isLiked ? 'Убрать лайк' : 'Лайк'}
       accessibilityState={{ disabled: disabled ?? false, selected: isLiked }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.();
+      }}
       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
     >
@@ -101,18 +86,10 @@ export function PostLikePill({ likesCount, isLiked, disabled, onPress, pillBg, p
             <LikeIcon size={24} color={pillFg} />
           </Animated.View>
           <Animated.View style={[{ position: 'absolute' }, filledIconStyle]} pointerEvents="none">
-            <LikeIcon size={24} color={LIKED_FG} filled />
+            <LikeIcon size={24} color={t.color.primaryForeground} filled />
           </Animated.View>
         </View>
-        <AnimatedTextInput
-          editable={false}
-          defaultValue={String(likesCount)}
-          animatedProps={animatedCountProps}
-          style={[COUNT_FONT, countColorStyle]}
-          underlineColorAndroid="transparent"
-          caretHidden
-          pointerEvents="none"
-        />
+        <Animated.Text style={[COUNT_FONT, countColorStyle]}>{likesCount}</Animated.Text>
       </Animated.View>
     </Pressable>
   );

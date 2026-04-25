@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { Image } from 'expo-image';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useCallback, useMemo, useState } from 'react';
+import type { ImageStyle } from 'react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,21 +12,14 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  addPostComment,
-  fetchPostById,
-  fetchPostComments,
-  togglePostLike,
-} from '../api/posts';
-import {
-  clearPostLikeWsGrace,
-  markPostLikeSyncedFromServer,
-} from '../api/realtime';
+import { addPostComment, fetchPostById, fetchPostComments, togglePostLike } from '../api/posts';
+import { clearPostLikeWsGrace, markPostLikeSyncedFromServer } from '../api/realtime';
 import { COMMENTS_PAGE_SIZE } from '../api/constants';
 import { NotFoundIcon } from '../components/icons/NotFoundIcon';
 import { SendIcon } from '../components/icons/SendIcon';
@@ -41,19 +35,21 @@ import { patchPostInFeedQueries } from '../query/patchFeedPost';
 import type { Comment } from '../types/comment';
 import { tokens } from '../theme/tokens';
 
+const t = tokens;
+
 type Props = NativeStackScreenProps<RootStackParamList, 'PostDetail'>;
 
 function CommentRow({ item }: { item: Comment }) {
   return (
-    <View className="flex-row gap-sm border-b border-border px-md py-md">
+    <View style={styles.commentRow}>
       <Image
         source={{ uri: item.author.avatarUrl }}
-        style={{ width: 40, height: 40, borderRadius: 20 }}
+        style={styles.commentAvatar as ImageStyle}
         contentFit="cover"
       />
-      <View className="min-w-0 flex-1">
-        <Text className="text-base font-semibold text-foreground">{item.author.displayName}</Text>
-        <Text className="mt-xs text-sm text-secondary">{item.text}</Text>
+      <View style={styles.commentBody}>
+        <Text style={styles.commentAuthor}>{item.author.displayName}</Text>
+        <Text style={styles.commentText}>{item.text}</Text>
       </View>
     </View>
   );
@@ -61,11 +57,14 @@ function CommentRow({ item }: { item: Comment }) {
 
 function LoadFail({ onRefresh }: { onRefresh: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center px-lg py-2xl">
+    <View style={styles.loadFail}>
       <NotFoundIcon size={96} />
-      <Text className="mt-md text-center text-base text-foreground">Не удалось загрузить публикацию</Text>
-      <Pressable className="mt-md rounded-lg bg-primary px-lg py-md" onPress={onRefresh}>
-        <Text className="font-semibold text-primaryForeground">Обновить</Text>
+      <Text style={styles.loadFailText}>Не удалось загрузить публикацию</Text>
+      <Pressable
+        onPress={onRefresh}
+        style={({ pressed }) => [styles.loadFailBtn, { opacity: pressed ? t.opacity.pressed : 1 }]}
+      >
+        <Text style={styles.loadFailBtnText}>Обновить</Text>
       </Pressable>
     </View>
   );
@@ -161,8 +160,7 @@ export function PostDetailScreen({ route }: Props) {
     },
   });
 
-  const commentComposerLocked =
-    postQuery.isPending || commentsQuery.isPending || addComment.isPending;
+  const commentComposerLocked = postQuery.isPending || commentsQuery.isPending || addComment.isPending;
 
   const onEndReached = useCallback(() => {
     if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
@@ -197,7 +195,7 @@ export function PostDetailScreen({ route }: Props) {
               onLikePress={() => toggleLike.mutate(postId)}
               isLikeBusy={toggleLike.isPending}
             />
-            <Text className="border-b border-border bg-background px-md pb-sm pt-lg text-sm font-medium text-secondary">
+            <Text style={styles.commentsMeta}>
               {postQuery.data.commentsCount} комментариев
             </Text>
           </View>
@@ -207,16 +205,16 @@ export function PostDetailScreen({ route }: Props) {
 
   if (postQuery.isError) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <LoadFail onRefresh={() => postQuery.refetch()} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+    <SafeAreaView style={styles.screen} edges={['bottom']}>
       <KeyboardAvoidingView
-        className="flex-1"
+        style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
@@ -225,8 +223,8 @@ export function PostDetailScreen({ route }: Props) {
           keyExtractor={(item) => item.id}
           renderItem={renderComment}
           ListHeaderComponent={listHeader}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 8 }}
-          style={{ flex: 1, backgroundColor: tokens.color.background }}
+          contentContainerStyle={styles.listContent}
+          style={styles.list}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           refreshControl={
@@ -244,23 +242,23 @@ export function PostDetailScreen({ route }: Props) {
             commentsQuery.isPending ? (
               <CommentsSkeletonList count={6} />
             ) : (
-              <Text className="px-md py-lg text-center text-sm text-muted">Пока нет комментариев</Text>
+              <Text style={styles.emptyCopy}>Пока нет комментариев</Text>
             )
           }
           ListFooterComponent={
             commentsQuery.isFetchingNextPage ? (
-              <View className="py-md">
+              <View style={styles.footerPad}>
                 <ActivityIndicator />
               </View>
             ) : null
           }
         />
-        <View className="border-t border-border bg-surface px-md py-sm">
-          <View className="flex-row items-center gap-sm">
+        <View style={styles.composerBar}>
+          <View style={styles.composerRow}>
             <TextInput
-              className="max-h-24 min-h-[44px] flex-1 rounded-xl border border-border bg-background px-md py-sm text-base text-foreground"
+              style={styles.input}
               placeholder="Ваш комментарий..."
-              placeholderTextColor={tokens.color.muted}
+              placeholderTextColor={t.color.muted}
               value={draft}
               onChangeText={setDraft}
               multiline
@@ -272,13 +270,14 @@ export function PostDetailScreen({ route }: Props) {
               accessibilityLabel="Отправить комментарий"
               disabled={!draft.trim() || commentComposerLocked}
               onPress={() => addComment.mutate(draft.trim())}
-              className="h-11 w-11 items-center justify-center rounded-full active:opacity-90"
+              style={({ pressed }) => [
+                styles.sendBtn,
+                { opacity: pressed && draft.trim() && !commentComposerLocked ? t.opacity.pressed : 1 },
+              ]}
             >
               <SendIcon
                 size={28}
-                color={
-                  !draft.trim() || commentComposerLocked ? '#D5C9FF' : tokens.color.primary
-                }
+                color={!draft.trim() || commentComposerLocked ? t.color.primarySoft : t.color.primary}
               />
             </Pressable>
           </View>
@@ -287,3 +286,79 @@ export function PostDetailScreen({ route }: Props) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: t.color.background },
+  kav: { flex: 1 },
+  list: { flex: 1, backgroundColor: t.color.background },
+  listContent: { flexGrow: 1, paddingBottom: t.space.sm },
+  commentRow: {
+    flexDirection: 'row',
+    gap: t.space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: t.color.border,
+    paddingHorizontal: t.space.md,
+    paddingVertical: t.space.md,
+  },
+  commentAvatar: { width: t.size.avatar, height: t.size.avatar, borderRadius: t.size.avatar / 2 },
+  commentBody: { minWidth: 0, flex: 1 },
+  commentAuthor: {
+    ...t.typography.bodySemibold,
+    color: t.color.foreground,
+  },
+  commentText: {
+    ...t.typography.caption,
+    marginTop: t.space.xs,
+    color: t.color.secondary,
+  },
+  commentsMeta: {
+    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: t.color.border,
+    backgroundColor: t.color.background,
+    paddingHorizontal: t.space.md,
+    paddingTop: t.space.lg,
+    paddingBottom: t.space.sm,
+    ...t.typography.captionMedium,
+    color: t.color.secondary,
+  },
+  loadFail: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: t.space.lg, paddingVertical: t.space['2xl'] },
+  loadFailText: {
+    ...t.typography.body,
+    marginTop: t.space.md,
+    textAlign: 'center',
+    color: t.color.foreground,
+  },
+  loadFailBtn: {
+    marginTop: t.space.md,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.color.primary,
+    paddingHorizontal: t.space.lg,
+    paddingVertical: t.space.md,
+  },
+  loadFailBtnText: { ...t.typography.bodySemibold, color: t.color.primaryForeground },
+  emptyCopy: { ...t.typography.caption, paddingHorizontal: t.space.md, paddingVertical: t.space.lg, textAlign: 'center', color: t.color.muted },
+  footerPad: { paddingVertical: t.space.md },
+  composerBar: { borderTopWidth: 1, borderTopColor: t.color.border, backgroundColor: t.color.surface, paddingHorizontal: t.space.md, paddingVertical: t.space.sm },
+  composerRow: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
+  input: {
+    minHeight: t.size.touchMin,
+    maxHeight: t.size.inputMaxHeight,
+    flex: 1,
+    borderRadius: t.radius.xl,
+    borderWidth: 1,
+    borderColor: t.color.border,
+    backgroundColor: t.color.background,
+    paddingHorizontal: t.space.md,
+    paddingVertical: t.space.sm,
+    ...t.typography.body,
+    color: t.color.foreground,
+  },
+  sendBtn: {
+    width: t.size.iconButton,
+    height: t.size.iconButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: t.radius.full,
+  },
+});

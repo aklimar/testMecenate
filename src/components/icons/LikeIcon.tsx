@@ -1,4 +1,5 @@
 import Svg, { Path } from 'react-native-svg';
+import { tokens } from '../../theme/tokens';
 
 type Props = {
   size?: number;
@@ -6,7 +7,7 @@ type Props = {
   filled?: boolean;
 };
 
-export function LikeIcon({ size = 24, color = '#5A636A', filled = false }: Props) {
+export function LikeIcon({ size = 24, color = tokens.color.pillForeground, filled = false }: Props) {
   if (filled) {
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

@@ -1,12 +1,15 @@
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
+import type { ImageStyle } from 'react-native';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Post } from '../types/post';
 import { tokens } from '../theme/tokens';
 import { CommentIcon } from './icons/CommentIcon';
 import { PayIcon } from './icons/PayIcon';
 import { PostLikePill } from './PostLikePill';
+
+const t = tokens;
 
 type Props = {
   post: Post;
@@ -17,17 +20,13 @@ type Props = {
 };
 
 function PaidPostTextSkeleton() {
-  const bone = tokens.color.border;
+  const bone = t.color.border;
   return (
-    <View
-      accessibilityLabel="Содержимое поста скрыто"
-      accessibilityRole="progressbar"
-      className="gap-sm"
-    >
-      <View className="gap-xs">
+    <View accessibilityLabel="Содержимое поста скрыто" accessibilityRole="progressbar" style={styles.skeletonTextCol}>
+      <View style={styles.skeletonBlockGap}>
         <View style={{ width: '35%', height: 20, borderRadius: 22, backgroundColor: bone }} />
       </View>
-      <View className="gap-xs">
+      <View style={styles.skeletonBlockGap}>
         <View style={{ width: '100%', height: 30, borderRadius: 22, backgroundColor: bone }} />
       </View>
     </View>
@@ -56,21 +55,21 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
     setDescWidth(0);
   }, [post.id, previewTrim, bodyTrim]);
 
-  const pillBg = tokens.color.pillBackground;
-  const pillFg = tokens.color.pillForeground;
+  const pillBg = t.color.pillBackground;
+  const pillFg = t.color.pillForeground;
 
   const descriptionBlock = (
-    <View className="mb-md">
+    <View style={styles.descBlockOuter}>
       {isPaid ? (
         <PaidPostTextSkeleton />
       ) : layout === 'detail' ? (
         <>
-          <Text className="mb-xs text-lg font-bold text-foreground">{post.title}</Text>
-          {expandedText ? <Text className="text-sm text-secondary">{expandedText}</Text> : null}
+          <Text style={styles.titleLgBold}>{post.title}</Text>
+          {expandedText ? <Text style={styles.bodySm}>{expandedText}</Text> : null}
         </>
       ) : (
         <>
-          <Text className="mb-xs text-lg font-bold text-foreground" numberOfLines={2}>
+          <Text style={styles.titleLgBold} numberOfLines={2}>
             {post.title}
           </Text>
 
@@ -84,9 +83,8 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
               {descWidth > 0 ? (
                 <Text
                   accessible={false}
-                  className="text-sm text-secondary"
+                  style={[styles.bodySm, styles.measureHidden, { width: descWidth }]}
                   pointerEvents="none"
-                  style={{ position: 'absolute', opacity: 0, width: descWidth }}
                   onTextLayout={(e) => setCollapsedTruncated(e.nativeEvent.lines.length > 2)}
                 >
                   {collapsedText}
@@ -94,27 +92,30 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
               ) : null}
               {!descExpanded ? (
                 <>
-                  <View className="w-full overflow-hidden">
-                    <Text className="text-sm text-secondary" ellipsizeMode="tail" numberOfLines={2}>
+                  <View style={styles.wFullOver}>
+                    <Text style={styles.bodySm} ellipsizeMode="tail" numberOfLines={2}>
                       {collapsedText}
                     </Text>
                   </View>
                   {showExpandControl ? (
                     <Pressable
                       accessibilityRole="button"
-                      className="mt-xs self-start"
+                      style={({ pressed }) => [styles.linkBtn, { opacity: pressed ? t.opacity.pressed : 1 }]}
                       onPress={() => setDescExpanded(true)}
                     >
-                      <Text className="text-sm font-semibold text-primary">Показать ещё</Text>
+                      <Text style={styles.linkText}>Показать ещё</Text>
                     </Pressable>
                   ) : null}
                 </>
               ) : (
                 <>
-                  <Text className="text-sm text-secondary">{expandedText}</Text>
+                  <Text style={styles.bodySm}>{expandedText}</Text>
                   {showExpandControl ? (
-                    <Pressable className="mt-xs self-start" onPress={() => setDescExpanded(false)}>
-                      <Text className="text-sm font-semibold text-primary">Свернуть</Text>
+                    <Pressable
+                      style={({ pressed }) => [styles.linkBtn, { opacity: pressed ? t.opacity.pressed : 1 }]}
+                      onPress={() => setDescExpanded(false)}
+                    >
+                      <Text style={styles.linkText}>Свернуть</Text>
                     </Pressable>
                   ) : null}
                 </>
@@ -129,15 +130,13 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
   const commentPillInner = (
     <>
       <CommentIcon color={pillFg} />
-      <Text className="text-sm font-medium" style={{ color: pillFg }}>
-        {post.commentsCount}
-      </Text>
+      <Text style={[styles.pillCount, { color: pillFg }]}>{post.commentsCount}</Text>
     </>
   );
 
   const buildActionsRow = (onCommentPillPress?: () => void) =>
     !isPaid ? (
-      <View className="flex-row gap-sm">
+      <View style={styles.actionsRow}>
         <PostLikePill
           likesCount={post.likesCount}
           isLiked={post.isLiked}
@@ -147,20 +146,14 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
           pillFg={pillFg}
         />
         {onCommentPillPress === undefined ? (
-          <View
-            className="flex-row items-center gap-xs rounded-full px-md py-sm"
-            style={{ backgroundColor: pillBg }}
-          >
-            {commentPillInner}
-          </View>
+          <View style={[styles.pillRow, { backgroundColor: pillBg }]}>{commentPillInner}</View>
         ) : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Комментарии, открыть публикацию"
             hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            style={({ pressed }) => [styles.pillRow, { backgroundColor: pillBg, opacity: pressed ? t.opacity.pressed : 1 }]}
             onPress={onCommentPillPress}
-            className="flex-row items-center gap-xs rounded-full px-md py-sm active:opacity-90"
-            style={{ backgroundColor: pillBg }}
           >
             {commentPillInner}
           </Pressable>
@@ -170,21 +163,21 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
 
   const headerAndCover = (
     <>
-      <View className="flex-row items-center gap-sm px-md pb-sm pt-md">
+      <View style={styles.headerRow}>
         <Image
           source={{ uri: post.author.avatarUrl }}
-          style={{ width: 40, height: 40, borderRadius: 20 }}
+          style={styles.avatar as ImageStyle}
           contentFit="cover"
         />
-        <Text className="min-w-0 flex-1 text-base font-semibold text-foreground" numberOfLines={1}>
+        <Text style={styles.authorName} numberOfLines={1}>
           {post.author.displayName}
         </Text>
       </View>
 
-      <View className="relative w-full overflow-hidden" style={{ aspectRatio: 16 / 9 }}>
+      <View style={styles.coverWrap}>
         <Image
           source={{ uri: post.coverUrl }}
-          style={{ width: '100%', height: '100%' }}
+          style={styles.coverImg as ImageStyle}
           contentFit="cover"
           transition={200}
         />
@@ -197,27 +190,23 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
               experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
               style={StyleSheet.absoluteFill}
             />
-            <View
-              className="absolute inset-0 justify-center px-md py-md"
-              pointerEvents="box-none"
-              style={{ zIndex: 1 }}
-            >
-              <View className="items-center gap-md">
+            <View style={[StyleSheet.absoluteFill, styles.paidOverlay]} pointerEvents="box-none">
+              <View style={styles.paidCol}>
                 <View pointerEvents="none">
                   <PayIcon size={56} />
                 </View>
-                <View className="rounded-lg bg-black/45 px-md py-sm">
-                  <Text className="text-center text-base leading-5 text-white">
+                <View style={styles.scrimBox}>
+                  <Text style={styles.scrimText}>
                     Контент скрыт пользователем.{'\n'}Доступ откроется после доната
                   </Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Отправить донат"
-                  className="rounded-lg bg-primary px-md py-md active:opacity-90"
+                  style={({ pressed }) => [styles.donateBtn, { opacity: pressed ? t.opacity.pressed : 1 }]}
                   onPress={() => {}}
                 >
-                  <Text className="text-center text-base font-semibold text-primaryForeground">Отправить донат</Text>
+                  <Text style={styles.donateBtnText}>Отправить донат</Text>
                 </Pressable>
               </View>
             </View>
@@ -230,28 +219,122 @@ export function PostCard({ post, onLikePress, isLikeBusy, layout = 'feed', onCar
   if (onCardPress && !isPaid) {
     const feedActionsRow = buildActionsRow(onCardPress);
     return (
-      <View className="overflow-hidden rounded-md border border-border bg-surface">
+      <View style={styles.card}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Открыть публикацию"
           onPress={onCardPress}
-          className="active:opacity-95"
+          style={({ pressed }) => ({ opacity: pressed ? t.opacity.cardPress : 1 })}
         >
           {headerAndCover}
-          <View className="px-md pt-md pb-sm">{descriptionBlock}</View>
+          <View style={styles.bodyFeed}>{descriptionBlock}</View>
         </Pressable>
-        {feedActionsRow ? <View className="px-md pb-md pt-0">{feedActionsRow}</View> : null}
+        {feedActionsRow ? <View style={styles.bodyActions}>{feedActionsRow}</View> : null}
       </View>
     );
   }
 
   return (
-    <View className="overflow-hidden rounded-md border border-border bg-surface">
+    <View style={styles.card}>
       {headerAndCover}
-      <View className="px-md pb-md pt-md">
+      <View style={styles.bodyStack}>
         {descriptionBlock}
         {buildActionsRow()}
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    overflow: 'hidden',
+    borderRadius: t.radius.md,
+    borderWidth: 1,
+    borderColor: t.color.border,
+    backgroundColor: t.color.surface,
+  },
+  skeletonTextCol: { gap: t.space.sm },
+  skeletonBlockGap: { gap: t.space.xs },
+  descBlockOuter: { marginBottom: t.space.md },
+  titleLgBold: {
+    ...t.typography.titleLgBold,
+    color: t.color.foreground,
+    marginBottom: t.space.xs,
+  },
+  bodySm: {
+    ...t.typography.caption,
+    color: t.color.secondary,
+  },
+  measureHidden: { position: 'absolute', opacity: 0 },
+  wFullOver: { width: '100%', overflow: 'hidden' },
+  linkBtn: { marginTop: t.space.xs, alignSelf: 'flex-start' },
+  linkText: {
+    ...t.typography.captionSemibold,
+    color: t.color.primary,
+  },
+  pillCount: {
+    ...t.typography.captionMedium,
+  },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
+  pillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: t.space.xs,
+    borderRadius: t.radius.full,
+    paddingHorizontal: t.space.md,
+    paddingVertical: t.space.sm,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: t.space.sm,
+    paddingHorizontal: t.space.md,
+    paddingTop: t.space.md,
+    paddingBottom: t.space.sm,
+  },
+  avatar: {
+    width: t.size.avatar,
+    height: t.size.avatar,
+    borderRadius: t.size.avatar / 2,
+  },
+  authorName: {
+    ...t.typography.bodySemibold,
+    minWidth: 0,
+    flex: 1,
+    color: t.color.foreground,
+  },
+  coverWrap: {
+    position: 'relative',
+    width: '100%',
+    overflow: 'hidden',
+    aspectRatio: 16 / 9,
+  },
+  coverImg: { width: '100%', height: '100%' },
+  paidOverlay: { justifyContent: 'center', zIndex: 1, paddingHorizontal: t.space.md, paddingVertical: t.space.md },
+  paidCol: { alignItems: 'center', gap: t.space.md },
+  scrimBox: {
+    borderRadius: t.radius.lg,
+    backgroundColor: t.color.overlayScrim,
+    paddingHorizontal: t.space.md,
+    paddingVertical: t.space.sm,
+  },
+  scrimText: {
+    ...t.typography.body,
+    textAlign: 'center',
+    color: t.color.onDark,
+  },
+  donateBtn: {
+    borderRadius: t.radius.lg,
+    backgroundColor: t.color.primary,
+    paddingHorizontal: t.space.md,
+    paddingVertical: t.space.md,
+  },
+  donateBtnText: {
+    ...t.typography.bodySemibold,
+    textAlign: 'center',
+    color: t.color.primaryForeground,
+  },
+  bodyFeed: { paddingHorizontal: t.space.md, paddingTop: t.space.md, paddingBottom: t.space.sm },
+  bodyActions: { paddingHorizontal: t.space.md, paddingTop: 0, paddingBottom: t.space.md },
+  bodyStack: { paddingHorizontal: t.space.md, paddingBottom: t.space.md, paddingTop: t.space.md },
+});
